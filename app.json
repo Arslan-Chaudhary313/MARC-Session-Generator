@@ -1,0 +1,23 @@
+{
+  "name": "MARC-MD-SESSION",
+  "description": "Session Generator for MARC-MD",
+  "repository": "https://github.com/your-username/your-repo",
+  "keywords": ["whatsapp", "baileys", "session"],
+  "env": {
+    "PORT": {
+      "description": "Server Port",
+      "value": "8000"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
