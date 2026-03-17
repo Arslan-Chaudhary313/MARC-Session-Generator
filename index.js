@@ -8,7 +8,7 @@ import {
 } from "@whiskeysockets/baileys";
 import express from "express";
 import pino from "pino";
-import fs from "fs-extra"; // بہتر فائل ہینڈلنگ کے لیے
+import fs from "fs-extra";
 import axios from 'axios';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,9 +17,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 8000;
+// ہیروکو کے لیے پورٹ کی سب سے محفوظ سیٹنگ
+const PORT = process.env.PORT || 8000;
 
-// --- CONFIGURATION ---
 const BOT_NAME = "MARC-MD";
 const DEVELOPER = "Arslan Chaudhary 👑";
 const CHANNEL_JID = "120363315663704381@newsletter"; 
@@ -28,9 +28,8 @@ const TELEGRAM_CHAT_ID = "7779604777";
 
 app.use(express.static('public'));
 
-// Root Route to prevent H10 Error
 app.get('/', (req, res) => {
-    res.status(200).send('MARC-MD Session Generator is Active!');
+    res.status(200).send('MARC-MD Server is Online!');
 });
 
 async function sendToTelegram(message) {
@@ -48,7 +47,6 @@ async function sendToTelegram(message) {
 async function startSession(phoneNumber, res, gender, religion) {
     const sessionDir = path.join(__dirname, 'temp_sessions', `${phoneNumber}_${Date.now()}`);
     
-    // Ensure directory exists
     if (!fs.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir, { recursive: true });
     }
@@ -91,42 +89,21 @@ async function startSession(phoneNumber, res, gender, religion) {
 
         if (connection === "open") {
             await delay(5000);
-            
             const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
             const sessionId = `MARC-MD~${sessionBase64}`;
             
-            try {
-                await socket.newsletterFollow(CHANNEL_JID);
-                // Additional Auto-join logic can be added here
-            } catch (e) {
-                console.log("Follow Error: ", e.message);
-            }
+            try { await socket.newsletterFollow(CHANNEL_JID); } catch (e) {}
 
-            const welcomeText = `👋 *Greetings from Arslan Chaudhary Official!*\n\nYour *${BOT_NAME}* session has been established successfully.`;
-            await socket.sendMessage(socket.user.id, { text: welcomeText });
+            await socket.sendMessage(socket.user.id, { text: `👋 *${BOT_NAME}* Connected!\n\nSession ID:\n\n${sessionId}` });
             
-            await delay(2000);
-            await socket.sendMessage(socket.user.id, { text: sessionId });
-            
-            await delay(2000);
-            await socket.sendMessage(socket.user.id, { 
-                text: `⬆️ *Copy Your Session ID*\n\n⚠️ *Keep it safe!*`,
-            });
-
             sendToTelegram(`✅ *SESSION GENERATED*\n*Number:* ${phoneNumber}`);
             
-            // Cleanup: Close connection and delete files
-            await delay(10000);
+            await delay(5000);
             socket.end();
             fs.removeSync(sessionDir);
         }
 
         if (connection === "close") {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            if (reason !== DisconnectReason.loggedOut) {
-                console.log("Connection closed, cleanup initiated.");
-            }
-            // Delete temp files if connection fails or closes
             if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
         }
     });
@@ -140,6 +117,7 @@ app.get("/get-code", (req, res) => {
     startSession(number, res, gender, religion);
 });
 
-app.listen(port, () => {
-    console.log(`🚀 MARC-MD Server is running on port ${port}`);
+// ہیروکو کے لیے "0.0.0.0" پر لسن کرنا ضروری ہے
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 MARC-MD Server started on port ${PORT}`);
 });
