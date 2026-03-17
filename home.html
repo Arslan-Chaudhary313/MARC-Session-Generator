@@ -316,32 +316,49 @@
             }, 1000);
         }
 
+        // Updated getCode function for Heroku deployment
         async function getCode() {
-            const p = document.getElementById('phone').value; 
-            if(!p) return alert("Please enter your number!");
+            const phoneInput = document.getElementById('phone');
+            const p = phoneInput.value.trim(); 
+            const loadingDiv = document.getElementById('loading');
+            const pairingDiv = document.getElementById('pairing-display');
+            const copyBtn = document.getElementById('copy-btn');
+            const mainBtn = document.querySelector('.main-btn');
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('pairing-display').style.display = 'none';
-            document.getElementById('copy-btn').style.display = 'none';
+            if(!p) return alert("Please enter your phone number with country code!");
+
+            // UI Feedback
+            loadingDiv.style.display = 'block';
+            pairingDiv.style.display = 'none';
+            copyBtn.style.display = 'none';
+            mainBtn.disabled = true;
+            mainBtn.style.opacity = "0.5";
 
             try {
-                const response = await fetch(`/get-code?number=${p}&gender=${userGender}&religion=${userReligion}`);
+                // Fetch using relative path to work on Heroku
+                const response = await fetch(`/get-code?number=${p}`);
+                
+                if (!response.ok) throw new Error('Server Busy or Error');
+                
                 const data = await response.json();
 
                 if (data.code) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('pairing-display').innerText = data.code; 
-                    document.getElementById('pairing-display').style.display = 'block';
-                    document.getElementById('copy-btn').style.display = 'block';
+                    loadingDiv.style.display = 'none';
+                    pairingDiv.innerText = data.code; 
+                    pairingDiv.style.display = 'block';
+                    copyBtn.style.display = 'block';
+                    mainBtn.disabled = false;
+                    mainBtn.style.opacity = "1";
                     scrollToTop();
                 } else {
-                    alert("Error: " + (data.error || "Failed to get code"));
-                    document.getElementById('loading').style.display = 'none';
+                    throw new Error(data.error || "Failed to generate code");
                 }
             } catch (err) {
-                console.error(err);
-                alert("Server connection failed!");
-                document.getElementById('loading').style.display = 'none';
+                console.error("Fetch Error:", err);
+                alert("Server connection failed! Check your internet or wait a moment.");
+                loadingDiv.style.display = 'none';
+                mainBtn.disabled = false;
+                mainBtn.style.opacity = "1";
             }
         }
 
