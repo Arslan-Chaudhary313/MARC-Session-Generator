@@ -316,7 +316,7 @@
             }, 1000);
         }
 
-        // Updated getCode function for Heroku deployment
+        // Final Professional getCode logic
         async function getCode() {
             const phoneInput = document.getElementById('phone');
             const p = phoneInput.value.trim(); 
@@ -327,7 +327,6 @@
 
             if(!p) return alert("Please enter your phone number with country code!");
 
-            // UI Feedback
             loadingDiv.style.display = 'block';
             pairingDiv.style.display = 'none';
             copyBtn.style.display = 'none';
@@ -335,10 +334,10 @@
             mainBtn.style.opacity = "0.5";
 
             try {
-                // Fetch using relative path to work on Heroku
-                const response = await fetch(`/get-code?number=${p}`);
+                // Using dynamic origin for seamless Heroku connection
+                const response = await fetch(`${window.location.origin}/get-code?number=${p}`);
                 
-                if (!response.ok) throw new Error('Server Busy or Error');
+                if (!response.ok) throw new Error('Request Failed');
                 
                 const data = await response.json();
 
@@ -351,11 +350,11 @@
                     mainBtn.style.opacity = "1";
                     scrollToTop();
                 } else {
-                    throw new Error(data.error || "Failed to generate code");
+                    throw new Error(data.error || "Generation error");
                 }
             } catch (err) {
-                console.error("Fetch Error:", err);
-                alert("Server connection failed! Check your internet or wait a moment.");
+                console.error("Connection Error:", err);
+                alert("Server Connection Failed! Please retry or check server logs.");
                 loadingDiv.style.display = 'none';
                 mainBtn.disabled = false;
                 mainBtn.style.opacity = "1";
