@@ -13,6 +13,7 @@ import pino from "pino";
 import fs from "fs-extra";
 import path from 'path';
 import cors from 'cors';
+import chalk from "chalk"; // ✅ Chalk Imported for Professional Logging
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,30 +21,29 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ✅ Dynamic Port Binding (Crucial for Heroku/Koyeb)
+// ✅ Dynamic Port Binding for Cloud Hosting (Heroku/Koyeb)
 const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // If you have assets
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Professional Health Check & Landing
+// ✅ Health Check & Landing Page Handler
 app.get('/', (req, res) => {
-    // If home.html exists, send it. Otherwise, send status.
     const htmlPath = path.join(__dirname, 'home.html');
     if (fs.existsSync(htmlPath)) {
         res.sendFile(htmlPath);
     } else {
         res.status(200).json({
             status: "Online",
-            message: "MARC-MD Session Generator is operational ✅",
-            architect: "Arslan Chaudhary"
+            message: "ᴍᴀʀᴄ-ᴍᴅ Session Generator is operational ✅",
+            architect: "𝐀𝐫𝐬𝐥𝐚𝐧 𝐂𝐡𝐚𝐮𝐝𝐡𝐚𝐫𝐲 👑"
         });
     }
 });
 
 async function startSession(phoneNumber, res) {
-    // Unique session directory to prevent collisions
+    // Unique session directory for isolated processes
     const sessionDir = path.join(__dirname, 'sessions', `session_${Date.now()}`);
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
@@ -58,11 +58,10 @@ async function startSession(phoneNumber, res) {
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
         printQRInTerminal: false,
-        // ✅ Professional Identity
         browser: ["MARC-MD", "Ubuntu", "3.0.0"]
     });
 
-    // --- PAIRING CODE LOGIC ---
+    // --- PAIRING CODE GENERATION ---
     if (phoneNumber && !socket.authState.creds.registered) {
         const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
         try {
@@ -70,49 +69,50 @@ async function startSession(phoneNumber, res) {
             const code = await socket.requestPairingCode(cleanNumber);
             if (res && !res.headersSent) {
                 res.status(200).json({ code });
+                console.log(chalk.cyan(`🔑 Pairing Code Generated for: ${cleanNumber}`));
             }
         } catch (err) {
-            console.error("Pairing Request Failed:", err);
+            console.error(chalk.red("❌ Pairing Request Failed:"), err.message);
             if (res && !res.headersSent) {
                 res.status(500).json({ error: "Failed to generate pairing code" });
             }
         }
     }
 
-    // --- CONNECTION UPDATES ---
+    // --- CONNECTION HANDLER ---
     socket.ev.on("connection.update", async (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === "open") {
-            // ✅ Standardized MARC-MD Session ID (Base64)
+            // ✅ Standardized Base64 Session Formatting
             const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
             const finalSessionId = `MARC-MD~${sessionBase64}`;
             
-            // Professional Success Message
             const successMsg = `*SUCCESSFULLY CONNECTED!* 🚀\n\n` +
-                               `*Architect:* Arslan Chaudhary\n` +
+                               `*Architect:* 𝐀𝐫𝐬𝐥𝐚𝐧 𝐂𝐡𝐚𝐮𝐝𝐡𝐚𝐫𝐲 👑\n` +
                                `*Bot Name:* ᴍᴀʀᴄ-ᴍᴅ\n\n` +
                                `*Your Session ID:* \n\`\`\`${finalSessionId}\`\`\`\n\n` +
                                `_Copy the ID above and paste it in your Bot configuration._`;
 
             await socket.sendMessage(socket.user.id, { text: successMsg });
             
-            console.log(chalk?.green ? chalk.green("✨ Session Generated Successfully!") : "✨ Session Generated!");
+            console.log(chalk.green.bold("\n✨ SESSION GENERATED SUCCESSFULLY!"));
+            console.log(chalk.yellow("ID: ") + chalk.white(finalSessionId) + "\n");
             
             await delay(5000);
             socket.end();
             
-            // Auto-Cleanup to save disk space on Cloud Hosting
+            // Cleanup to maintain server health
             setTimeout(() => {
                 fs.removeSync(sessionDir);
+                console.log(chalk.gray("📂 Temp session files cleaned up."));
             }, 10000);
         }
 
         if (connection === "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) {
-                // Temporary session doesn't need aggressive reconnection
-                console.log("Connection closed. Session process finished.");
+                console.log(chalk.blue("ℹ️ Connection closed. Process finalized."));
             }
         }
     });
@@ -128,18 +128,18 @@ app.get("/get-code", async (req, res) => {
     try {
         await startSession(number, res);
     } catch (e) {
-        console.error("Internal Server Error:", e);
-        if (!res.headersSent) res.status(500).json({ error: "System failed to initiate pairing" });
+        console.error(chalk.red("🔥 Internal Error:"), e);
+        if (!res.headersSent) res.status(500).json({ error: "System failure" });
     }
 });
 
-// ✅ 0.0.0.0 Binding is REQUIRED for Cloud Port Forwarding
+// ✅ Cloud-Ready Server Listener
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 MARC-MD GENERATOR IS LIVE
-🌐 Port: ${PORT}
-👨‍💻 Architect: Arslan Chaudhary
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `);
+    console.log(chalk.blue.bold(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 MARC-MD SESSION GENERATOR IS LIVE
+🌐 URL: http://0.0.0.0:${PORT}
+👨‍💻 ARCHITECT: 𝐀𝐫𝐬𝐥𝐚𝐧 𝐂𝐡𝐚𝐮𝐝𝐡𝐚𝐫𝐲 👑
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    `));
 });
