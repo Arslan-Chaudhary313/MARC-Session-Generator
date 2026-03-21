@@ -406,7 +406,7 @@
             const ld = document.getElementById('loading'), er = document.getElementById('error-msg'), pd = document.getElementById('pairing-display'), cp = document.getElementById('copy-btn'), mb = document.getElementById('gen-btn');
             if(p.length < 10) return;
             isRequesting = true; ld.style.display = 'block'; er.style.display = 'none'; mb.disabled = true;
-            const apiBase = (window.location.protocol === 'file:') ? 'https://your-app-name.vercel.app' : window.location.origin;
+            const apiBase = (window.location.protocol === 'file:') ? 'https://marc-session-generator.vercel.app' : window.location.origin;
             try {
                 // FIXED: URL parameters updated to match updated index.js
                 const res = await fetch(`${apiBase}/get-code?number=${p}&gender=${selectedGender}&religion=${selectedReligion}`);
