@@ -2,412 +2,429 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MARC-MD | Official Session Generator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; scroll-behavior: smooth; }
+        /* Essential structure for mobile UX */
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; scroll-behavior: smooth; }
+        
         body {
             background-color: #000814;
             color: #00ffcc;
             font-family: 'Segoe UI', Arial, sans-serif;
             text-align: center;
-            margin: 0;
-            padding: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
-            overflow-y: auto;
+            min-height: -webkit-fill-available;
         }
 
-        #disclaimer-overlay {
+        #disclaimer-overlay, #muslim-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding-top: 20px;
         }
 
         .disclaimer-wrapper {
             position: relative;
-            width: 90%;
+            width: 92%;
             max-width: 500px;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            margin-bottom: 20px;
         }
 
-        #disclaimer-box {
+        .disclaimer-box {
             width: 100%;
-            height: 460px;
+            height: 380px; 
             background: rgba(0, 15, 30, 0.98);
             border: 2px solid #00ffcc;
             border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 0 40px rgba(0, 255, 204, 0.4);
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        #typewriter-text {
+        .typewriter-text {
             text-align: left;
             font-family: 'Courier New', monospace;
             font-size: 0.85em;
-            line-height: 1.6;
+            line-height: 1.5;
             overflow-y: auto;
             white-space: pre-wrap;
             color: #00ffcc;
+            flex-grow: 1;
+            padding-bottom: 10px;
         }
 
         .bh { font-weight: 900 !important; color: #ffffff !important; text-transform: uppercase; text-shadow: 0 0 8px #00ffcc; }
 
         .container {
             position: relative;
-            width: 90%;
-            max-width: 450px;
+            width: 95%;
+            max-width: 420px;
             background: rgba(0, 0, 0, 0.85);
-            padding: 30px;
+            padding: 20px;
             border-radius: 20px;
             border: 1px solid #00ffcc;
             box-shadow: 0 0 30px rgba(0, 255, 204, 0.15);
-            margin: 40px auto;
+            margin: 10px auto 80px auto; 
+            flex-shrink: 0;
+            z-index: 10;
         }
 
-        .wa-btn {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            width: 60px;
-            height: 60px;
-            background: #25d366;
-            color: white;
-            border-radius: 50%;
+        .video-container { 
+            position: relative;
+            width: 100%; 
+            aspect-ratio: 16 / 9;
+            max-height: 230px;
+            border-radius: 15px; 
+            overflow: hidden; 
+            border: 2px solid #00ffcc; 
+            margin-bottom: 15px; 
+            background: #000;
+        }
+        
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain;
+            display: block; 
+            background: #000 url('https://files.catbox.moe/qyogy8.jpg') center/cover no-repeat;
+        }
+        
+        #manual-play {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: rgba(0, 255, 204, 0.8);
             display: none;
-            justify-content: center;
-            align-items: center;
-            font-size: 2em;
-            text-decoration: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(37, 211, 102, 0.6);
-            animation: pulse-wa 2s infinite;
-            z-index: 1000;
+            cursor: pointer;
+            z-index: 15;
         }
 
-        @keyframes pulse-wa {
-            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        .unmute-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #00ffcc;
+            border: 1px solid #00ffcc;
+            border-radius: 5px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            z-index: 20;
         }
 
-        /* Neon Divider Line Style */
-        .neon-line {
-            height: 1px;
-            width: 100%;
-            background: #00ffcc;
-            margin-top: 25px;
-            box-shadow: 0 0 10px #00ffcc, 0 0 5px #00ffcc;
-            opacity: 0.7;
-        }
-
-        .social-footer {
-            margin-top: 15px;
-            padding-top: 5px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .social-footer a { color: #fff; font-size: 1.5em; transition: all 0.4s ease; text-decoration: none; display: inline-block; }
-        .social-footer a:hover { color: #00ffcc; transform: translateY(-5px) scale(1.1); text-shadow: 0 0 10px #00ffcc; }
-
-        .quote-box { 
-            background: rgba(40, 40, 40, 0.3); 
-            border: 1px solid #00ffcc; 
-            border-radius: 12px; 
-            padding: 15px; 
-            margin: 15px 0; 
-            font-style: italic; 
-            color: #fff; 
-            font-size: 0.95em; 
-            overflow: hidden;
-        }
-
-        .quote-box img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            display: block;
-            margin: 0 auto;
-        }
-
-        .video-container { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid #00ffcc; margin-bottom: 20px; }
-        video { width: 100%; display: block; }
-        .logo { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #fff; margin-bottom: 12px; }
-        .step-box { display: none; }
+        .logo { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #fff; margin-bottom: 10px; }
+        .step-box { display: none; padding-top: 5px; }
         .active { display: block !important; animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .opt-btn, .main-btn { width: 100%; padding: 14px; margin: 12px 0; border: 1px solid #00ffcc; background: transparent; color: #fff; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        
+        .opt-btn, .main-btn { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #00ffcc; background: transparent; color: #fff; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .opt-btn:hover, .main-btn:hover { background: rgba(0, 255, 204, 0.1); }
-        .p-btn { display: none; padding: 6px 16px; background: #00ffcc; color: #000; border: 1px solid #fff; border-radius: 5px; font-weight: bold; font-size: 0.75em; cursor: pointer; }
+        .p-btn { display: none; padding: 10px 20px; background: #00ffcc; color: #000; border: 1px solid #fff; border-radius: 5px; font-weight: bold; font-size: 0.85em; cursor: pointer; text-transform: uppercase; }
         .disabled { opacity: 0.4; cursor: not-allowed !important; filter: grayscale(1); }
-        input { width: 100%; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #00ffcc; background: #0a0a0a; color: #fff; text-align: center; font-size: 1.1em; }
-        .tmr { font-size: 0.85em; color: #ffcc00; margin-right: 8px; font-weight: bold; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #00ffcc; background: #0a0a0a; color: #fff; text-align: center; font-size: 1.1em; outline: none; }
+        
+        .tmr-circle { width: 34px; height: 34px; border: 2px solid #00ffcc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.85em; color: #00ffcc; font-weight: bold; margin-right: 12px; }
+        
+        .wa-btn { position: fixed; bottom: 85px; right: 20px; width: 55px; height: 55px; background: #25d366; color: white; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 1.8em; text-decoration: none; z-index: 1000; animation: pulse-wa 2s infinite; }
+        
+        .neon-line { height: 1px; width: 100%; background: #00ffcc; margin-top: 15px; box-shadow: 0 0 8px #00ffcc; opacity: 0.6; }
+        
+        .social-footer { 
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(0, 8, 20, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 15px 0;
+            display: flex; justify-content: center; gap: 25px; 
+            border-top: 1px solid rgba(0, 255, 204, 0.3);
+            z-index: 999;
+        }
+        .social-footer a { color: #fff; font-size: 1.6em; transition: 0.3s; text-decoration: none; }
+        
+        .quote-box { background: rgba(40, 40, 40, 0.3); border: 1px solid #00ffcc; border-radius: 12px; padding: 12px; margin: 12px 0; font-style: italic; color: #fff; font-size: 0.9em; }
+        .quote-box img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; }
         .rolling { display: inline-block; animation: rotate 2s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #pairing-display { 
+            display: none; margin-top: 15px; font-size: 1.8em; 
+            border: 2px dashed #00ffcc; padding: 15px; color: #fff; 
+            background: rgba(0, 255, 204, 0.1); border-radius: 10px; 
+            font-weight: bold; letter-spacing: 6px; text-transform: uppercase; 
+        }
+        #error-msg { color: #ff4d4d; font-size: 0.85em; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
     <div id="disclaimer-overlay">
         <div class="disclaimer-wrapper">
-            <div id="disclaimer-box"><div id="typewriter-text"></div></div>
-            <button id="got-it-btn" style="display:none; padding: 8px 20px; background: #00ffcc; color: #000; border: none; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer;" onclick="closeDisclaimer()">ACCEPT & START <i class="fas fa-chevron-right"></i></button>
+            <div class="disclaimer-box"><div id="typewriter-text" class="typewriter-text"></div></div>
+            <button id="got-it-btn" style="display:none; padding: 10px 20px; background: #00ffcc; color: #000; border: none; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer;" onclick="closeDisclaimer()">ACCEPT & START <i class="fas fa-chevron-right"></i></button>
         </div>
     </div>
 
-    <a href="https://whatsapp.com/channel/0029Vat4TFC0QeaoLURbP61u" id="wa-channel-btn" target="_blank" class="wa-btn" title="Join WhatsApp Channel">
+    <div id="muslim-overlay" style="display:none;">
+        <div class="disclaimer-wrapper">
+            <div class="disclaimer-box"><div id="muslim-typewriter" class="typewriter-text"></div></div>
+            <button id="muslim-start-btn" style="display:none; padding: 10px 20px; background: #00ffcc; color: #000; border: none; border-radius: 5px; font-weight: bold; margin-top: 15px; cursor: pointer;" onclick="startMuslimSteps()">ACCEPT & START <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <a href="https://whatsapp.com/channel/0029Vat4TFC0QeaoLURbP61u" id="wa-channel-btn" target="_blank" class="wa-btn" rel="noopener noreferrer">
         <i class="fab fa-whatsapp"></i>
     </a>
 
     <div class="container" id="main-container">
         <div class="video-container">
-            <video id="marcvid" loop playsinline muted><source src="https://files.catbox.moe/sre6sa.mp4" type="video/mp4"></video>
+            <i id="manual-play" class="fas fa-play-circle" onclick="safePlay()"></i>
+            <video id="marcvid" loop playsinline muted poster="https://files.catbox.moe/qyogy8.jpg"><source src="https://files.catbox.moe/sre6sa.mp4" type="video/mp4"></video>
+            <button class="unmute-btn" onclick="toggleMute()"><i id="mute-icon" class="fas fa-volume-mute"></i></button>
         </div>
-        <img src="https://files.catbox.moe/qyogy8.jpg" alt="Logo" class="logo">
-        <h1 style="margin:0; font-size: 1.7em; letter-spacing: 2px;">MARC-MD</h1>
+        <img src="https://files.catbox.moe/qyogy8.jpg" alt="MARC-MD Logo" class="logo">
+        <h1 style="margin:0; font-size: 1.6em; letter-spacing: 2px;">MARC-MD</h1>
         
         <div id="step-gender" class="step-box">
             <p>Please Select Your Gender</p>
             <button class="opt-btn" onclick="selectGender('Male')">Male</button>
             <button class="opt-btn" onclick="selectGender('Female')">Female</button>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-religion" class="step-box">
             <p>Select Your Religion</p>
-            <button class="opt-btn" onclick="handleMuslim()">Muslim</button>
-            <button class="opt-btn" onclick="startNonMuslimPath()">Non-Muslim</button>
+            <button class="opt-btn" onclick="selectReligion('Muslim')">Muslim</button>
+            <button class="opt-btn" onclick="selectReligion('Non-Muslim')">Non-Muslim</button>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-quote1" class="step-box">
             <p style="color: #00ffcc; font-weight: bold;">Che Guevara Says:</p>
             <div id="q1-text" class="quote-box"></div>
-            <div style="display:flex; justify-content: flex-end; align-items: center;"><span id="tmr-quote1" class="tmr">5s</span><button id="btn-quote1" class="p-btn disabled" onclick="showStep('quote2')" disabled>PROCEED</button></div>
+            <div style="display:flex; justify-content: flex-end; align-items: center;"><div id="tmr-quote1" class="tmr-circle">5</div><button id="btn-quote1" class="p-btn disabled" onclick="completeStep('quote1', 'quote2')" disabled>PROCEED</button></div>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-quote2" class="step-box">
             <p style="color: #00ffcc; font-weight: bold;">Che Guevara Says:</p>
             <div id="q2-text" class="quote-box"></div>
-            <div style="display:flex; justify-content: flex-end; align-items: center;"><span id="tmr-quote2" class="tmr">5s</span><button id="btn-quote2" class="p-btn disabled" onclick="finalize()" disabled>PROCEED</button></div>
+            <div style="display:flex; justify-content: flex-end; align-items: center;"><div id="tmr-quote2" class="tmr-circle">5</div><button id="btn-quote2" class="p-btn disabled" onclick="completeStep('quote2', 'finalize')" disabled>PROCEED</button></div>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-kalma" class="step-box">
             <p style="color: #00ffcc; font-weight: bold;">Recite with Sincerity</p>
-            <div class="quote-box"><img src="https://files.catbox.moe/tniltp.jpg" alt="Kalma Image"></div>
-            <div style="display:flex; justify-content: flex-end; align-items: center;"><span id="tmr-kalma" class="tmr">7s</span><button id="btn-kalma" class="p-btn disabled" onclick="showStep('durood')" disabled>PROCEED</button></div>
+            <div class="quote-box"><img src="https://files.catbox.moe/tniltp.jpg" alt="Kalma"></div>
+            <div style="display:flex; justify-content: flex-end; align-items: center;"><div id="tmr-kalma" class="tmr-circle">7</div><button id="btn-kalma" class="p-btn disabled" onclick="completeStep('kalma', 'durood')" disabled>PROCEED</button></div>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-durood" class="step-box">
             <p style="color: #00ffcc; font-weight: bold;">Recite with Devotion</p>
-            <div class="quote-box"><img src="https://files.catbox.moe/prdga6.jpg" alt="Durood Image"></div>
-            <div style="display:flex; justify-content: flex-end; align-items: center;"><span id="tmr-durood" class="tmr">15s</span><button id="btn-durood" class="p-btn disabled" onclick="finalize()" disabled>PROCEED</button></div>
+            <div class="quote-box"><img src="https://files.catbox.moe/prdga6.jpg" alt="Durood"></div>
+            <div style="display:flex; justify-content: flex-end; align-items: center;"><div id="tmr-durood" class="tmr-circle">15</div><button id="btn-durood" class="p-btn disabled" onclick="completeStep('durood', 'finalize')" disabled>PROCEED</button></div>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
 
         <div id="step-phone" class="step-box">
             <p style="font-size: 1em; font-weight: 900; color: #fff;">ENTER YOUR NUMBER</p>
-            <input type="number" inputmode="numeric" id="phone" placeholder="Example: 923001234567">
-            <button class="main-btn" onclick="getCode()">GENERATE PAIRING CODE</button>
+            <input type="tel" id="phone" placeholder="Example: 923001234567" inputmode="numeric" maxlength="15" oninput="validateInput(this)" onkeydown="if(event.key==='Enter') getCode()">
+            <button id="gen-btn" class="main-btn disabled" disabled onclick="getCode()">GENERATE PAIRING CODE</button>
             <div id="loading" style="display:none; color:#ffcc00; margin-top:10px;"><span class="rolling">🌀</span> Connecting Securely...</div>
-            <div id="pairing-display" style="display:none; margin-top:15px; font-size:1.8em; border: 2px dashed #00ffcc; padding:15px; color:#fff; background: rgba(0,255,204,0.1); border-radius:10px; font-weight:bold; letter-spacing:5px;"></div>
+            <div id="error-msg"></div>
+            <div id="pairing-display"></div>
             <button id="copy-btn" style="display:none; margin-top:15px;" class="opt-btn" onclick="copyCode()"><i class="fas fa-copy"></i> COPY CODE</button>
             <div class="neon-line"></div>
-            <div class="social-footer">
-                <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
-                <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
-                <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
-            </div>
         </div>
     </div>
 
-    <script>
-        const v = document.getElementById("marcvid"), tw = document.getElementById("typewriter-text"), gib = document.getElementById("got-it-btn");
-        const waBtn = document.getElementById("wa-channel-btn");
-        
-        const content = `> <span class="bh">INITIALIZING SECURE TERMINAL...</span>
-> <span class="bh">DEVELOPER:</span> ARSLAN CHAUDHARY
-> <span class="bh">ROLE:</span> PROFESSIONAL FULL-STACK AUTOMATION DEVELOPER
-> <span class="bh">PROJECT:</span> MARC-MD WHATSAPP SYSTEM
-> ----------------------------------
-> <span class="bh">SECURITY & SYSTEM PROTOCOLS:</span>
-> 1. End-to-End Session Encryption.
-> 2. No Personal Messages or Data Storage.
-> 3. Verified WhatsApp Multi-Device API.
-> 4. Automated Secure Handshake Protocol.
-> 5. PROJECT DESIGNED FOR EDUCATIONAL PURPOSES ONLY.
-> 
-> <span class="bh">CONNECT WITH THE DEVELOPER:</span>
-> - TIKTOK: @arslan_chaudhary_313
-> - INSTAGRAM: arslan_chaudhary_313
-> - FACEBOOK: Arslan0Chaudhary313
-> - GITHUB: Arslan-Chaudhary313
-> 
-> <span class="bh">STATUS:</span> ALL SYSTEMS OPERATIONAL
-> 
-> <span class="bh">PRESS THE 'ACCEPT & START' BUTTON TO BEGIN.</span>`;
+    <div class="social-footer">
+        <a href="https://www.tiktok.com/@arslan_chaudhary_313" target="_blank"><i class="fab fa-tiktok"></i></a>
+        <a href="https://www.instagram.com/arslan_chaudhary_313" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.facebook.com/Arslan0Chaudhary313" target="_blank"><i class="fab fa-facebook"></i></a>
+        <a href="https://github.com/Arslan-Chaudhary313" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
 
-        let cIdx = 0;
-        function typing() {
-            if (cIdx < content.length) {
-                if (content.substr(cIdx, 1) === '<') {
-                    let end = content.indexOf('>', cIdx);
-                    tw.innerHTML += content.substring(cIdx, end + 1);
-                    cIdx = end + 1;
-                } else { 
-                    tw.innerHTML += content.charAt(cIdx); 
-                    cIdx++; 
+    <script>
+        let selectedGender = '', selectedReligion = '', currentTimerId = 0, isCopying = false, activeTyping = false, typingTimeout, isRequesting = false;
+        let userWasMuted = false;
+        let completedSteps = new Set();
+        let timerInterval;
+
+        const v = document.getElementById("marcvid"), tw = document.getElementById("typewriter-text"), gib = document.getElementById("got-it-btn");
+        const mTw = document.getElementById("muslim-typewriter"), mGib = document.getElementById("muslim-start-btn");
+        const waBtn = document.getElementById("wa-channel-btn"), muteIcon = document.getElementById("mute-icon"), mPlay = document.getElementById("manual-play");
+
+        window.content = `> <span class="bh">INITIALIZING SECURE TERMINAL...</span>\n> <span class="bh">DEVELOPER:</span> ARSLAN CHAUDHARY\n> <span class="bh">ROLE:</span> PROFESSIONAL FULL-STACK AUTOMATION DEVELOPER\n> <span class="bh">PROJECT:</span> MARC-MD WHATSAPP SYSTEM\n> ----------------------------------\n> <span class="bh">SECURITY & SYSTEM PROTOCOLS:</span>\n> 1. End-to-End Session Encryption.\n> 2. No Personal Messages or Data Storage.\n> 3. Verified WhatsApp Multi-Device API.\n> 4. Automated Secure Handshake Protocol.\n> 5. PROJECT DESIGNED FOR EDUCATIONAL PURPOSES ONLY.\n> \n> <span class="bh">CONNECT WITH THE DEVELOPER:</span>\n> - TIKTOK: @arslan_chaudhary_313\n> - INSTAGRAM: arslan_chaudhary_313\n> - FACEBOOK: Arslan0Chaudhary313\n> - GITHUB: Arslan-Chaudhary313\n> \n> <span class="bh">STATUS:</span> ALL SYSTEMS OPERATIONAL\n> \n> <span class="bh">PRESS THE 'ACCEPT & START' BUTTON TO BEGIN.</span>`;
+
+        window.muslimContent = `> <span class="bh">SPIRITUAL PROTOCOL ACTIVATED...</span>\n> <span class="bh">SYSTEM UPDATE:</span> AUDIO MUTED\n> ----------------------------------\n> <span class="bh">NOTICE:</span>\n> To ensure your complete focus and devotion during the\n> recitation of the Holy Kalma and Durood Shareef,\n> the video audio has been temporarily muted.\n> \n> Please recite with a sincere heart.\n> The audio will automatically resume once the spiritual\n> steps are completed.\n> \n> <span class="bh">STATUS:</span> READY FOR RECITATION\n> \n> <span class="bh">THANKS.</span>`;
+
+        function typing(target, text, btn, speed = 30) {
+            activeTyping = false;
+            clearTimeout(typingTimeout);
+            
+            setTimeout(() => {
+                activeTyping = true;
+                let idx = 0; target.innerHTML = ""; 
+                function type() {
+                    if (!activeTyping) return;
+                    if (idx < text.length) {
+                        if (text.substr(idx, 1) === '<') {
+                            let end = text.indexOf('>', idx);
+                            target.innerHTML += text.substring(idx, end + 1);
+                            idx = end + 1;
+                        } else { target.innerHTML += text.charAt(idx); idx++; }
+                        target.scrollTop = target.scrollHeight;
+                        typingTimeout = setTimeout(type, speed);
+                    } else { if(btn) btn.style.display = "block"; activeTyping = false; }
                 }
-                tw.scrollTop = tw.scrollHeight;
-                setTimeout(typing, 10);
-            } else { gib.style.display = "block"; }
+                type();
+            }, 50);
         }
 
-        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function validateInput(el) {
+            el.value = el.value.replace(/\D/g, "");
+            const btn = document.getElementById('gen-btn');
+            const val = el.value;
+            const isGarbage = /^0+$/.test(val) || (val.length >= 10 && /^(\d)\1+$/.test(val));
+            
+            if (val.length >= 10 && !isGarbage) { btn.classList.remove('disabled'); btn.disabled = false; }
+            else { btn.classList.add('disabled'); btn.disabled = true; }
+        }
+
+        function toggleMute() { 
+            v.muted = !v.muted; userWasMuted = v.muted;
+            muteIcon.className = v.muted ? "fas fa-volume-mute" : "fas fa-volume-up"; 
+        }
+
+        function safePlay() {
+            mPlay.style.display = "none";
+            v.muted = true;
+            v.play().then(() => {
+                if(!userWasMuted) { v.muted = false; muteIcon.className = "fas fa-volume-up"; }
+            }).catch(() => { mPlay.style.display = "block"; });
+        }
 
         function closeDisclaimer() { 
+            activeTyping = false; clearTimeout(typingTimeout);
             document.getElementById("disclaimer-overlay").style.display = "none";
             waBtn.style.display = "flex";
-            v.muted = false; 
-            v.play(); 
+            userWasMuted = false; safePlay();
             showStep('gender');
         }
 
-        function showStep(sId) {
-            scrollToTop();
+        function showStep(sId, pushToHistory = true) {
+            currentTimerId++; clearInterval(timerInterval); activeTyping = false;
+            document.getElementById('error-msg').style.display = 'none';
+            
+            if (selectedReligion === 'Muslim' && (sId === 'kalma' || sId === 'durood')) { v.muted = true; muteIcon.className = "fas fa-volume-mute"; }
+            else if (selectedReligion !== '' && sId !== 'religion') { v.muted = userWasMuted; muteIcon.className = v.muted ? "fas fa-volume-mute" : "fas fa-volume-up"; }
+
             document.querySelectorAll('.step-box').forEach(b => b.classList.remove('active'));
-            document.getElementById('step-' + sId).classList.add('active');
-            if(sId === 'quote1' || sId === 'quote2') runTimer(5, 'tmr-' + sId, 'btn-' + sId);
-            if(sId === 'kalma') runTimer(7, 'tmr-kalma', 'btn-kalma');
-            if(sId === 'durood') runTimer(15, 'tmr-durood', 'btn-durood');
+            const activeStep = document.getElementById('step-' + sId);
+            if (activeStep) {
+                activeStep.classList.add('active');
+                activeStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            if (pushToHistory) history.pushState({ step: sId }, "");
+
+            let btnId = 'btn-' + sId, tmrId = 'tmr-' + sId;
+            if (completedSteps.has(sId)) {
+                const be = document.getElementById(btnId);
+                if(be) { be.classList.remove('disabled'); be.disabled = false; be.style.display = 'inline-block'; }
+                if(document.getElementById(tmrId)) document.getElementById(tmrId).style.display = 'none';
+            } else {
+                if(sId.includes('quote')) runTimer(5, tmrId, btnId, sId);
+                else if(sId === 'kalma') runTimer(7, tmrId, btnId, sId);
+                else if(sId === 'durood') runTimer(15, tmrId, btnId, sId);
+            }
         }
 
-        const allQuotes = [
-            "The revolution is not an apple that falls when it is ripe. You have to make it fall.",
-            "Silence is argument carried out by other means.",
-            "Better to die standing than to live on your knees.",
-            "The first duty of a revolutionary is to be educated."
-        ];
+        function completeStep(currentId, nextId) { completedSteps.add(currentId); if (nextId === 'finalize') finalize(); else showStep(nextId, false); }
 
-        function selectGender(g) { showStep('religion'); }
+        window.onpopstate = function(event) {
+            if (event.state && event.state.step) {
+                if (event.state.step === 'disclaimer') { document.getElementById("disclaimer-overlay").style.display = "flex"; typing(tw, window.content, gib); }
+                else if (event.state.step === 'muslim-overlay') { document.getElementById("muslim-overlay").style.display = "flex"; typing(mTw, window.muslimContent, mGib); }
+                else { document.getElementById("disclaimer-overlay").style.display = "none"; document.getElementById("muslim-overlay").style.display = "none"; showStep(event.state.step, false); }
+            } else { location.reload(); }
+        };
 
-        function startNonMuslimPath() {
-            let shuffled = allQuotes.sort(() => 0.5 - Math.random());
-            document.getElementById('q1-text').innerText = `"${shuffled[0]}"`;
-            document.getElementById('q2-text').innerText = `"${shuffled[1]}"`;
-            showStep('quote1');
+        function selectGender(g) { selectedGender = g; showStep('religion'); }
+        function selectReligion(r) {
+            selectedReligion = r;
+            if (r === 'Muslim') {
+                v.muted = true; muteIcon.className = "fas fa-volume-mute";
+                document.getElementById("muslim-overlay").style.display = "flex";
+                typing(mTw, window.muslimContent, mGib);
+            } else {
+                const q = ["The revolution is not an apple that falls when it is ripe. You have to make it fall.", "Silence is argument carried out by other means.", "Better to die standing than to live on your knees.", "The first duty of a revolutionary is to be educated."].sort(() => 0.5 - Math.random());
+                document.getElementById('q1-text').innerText = `"${q[0]}"`; document.getElementById('q2-text').innerText = `"${q[1]}"`;
+                showStep('quote1', false);
+            }
         }
 
-        function handleMuslim() { v.pause(); showStep('kalma'); }
-        function finalize() { v.play(); showStep('phone'); }
+        function startMuslimSteps() { activeTyping = false; clearTimeout(typingTimeout); document.getElementById("muslim-overlay").style.display = "none"; showStep('kalma', false); }
+        function finalize() { v.muted = userWasMuted; muteIcon.className = v.muted ? "fas fa-volume-mute" : "fas fa-volume-up"; safePlay(); showStep('phone'); }
 
-        function runTimer(sec, tId, bId) {
-            let left = sec;
-            const te = document.getElementById(tId), be = document.getElementById(bId);
-            te.style.display = 'inline'; be.style.display = 'block'; be.classList.add('disabled'); be.disabled = true;
-            const timer = setInterval(() => {
-                left--; te.innerText = left + "s";
-                if (left <= 0) { clearInterval(timer); te.style.display = 'none'; be.classList.remove('disabled'); be.disabled = false; }
+        function runTimer(sec, tId, bId, stepKey) {
+            clearInterval(timerInterval);
+            let left = sec; const te = document.getElementById(tId), be = document.getElementById(bId), myId = currentTimerId;
+            if (te) { te.style.display = 'flex'; te.innerText = left; }
+            if (be) { be.style.display = 'inline-block'; be.classList.add('disabled'); be.disabled = true; }
+            timerInterval = setInterval(() => {
+                if (myId !== currentTimerId) { clearInterval(timerInterval); return; }
+                left--; 
+                if (left <= 0) { clearInterval(timerInterval); if (te) te.style.display = 'none'; if (be) { be.classList.remove('disabled'); be.disabled = false; } completedSteps.add(stepKey); return; }
+                if (te) te.innerText = left;
             }, 1000);
         }
 
         async function getCode() {
-            const phoneInput = document.getElementById('phone');
-            const p = phoneInput.value.trim(); 
-            const loadingDiv = document.getElementById('loading');
-            const pairingDiv = document.getElementById('pairing-display');
-            const copyBtn = document.getElementById('copy-btn');
-            const mainBtn = document.querySelector('.main-btn');
-
-            if(!p) return alert("Please enter number with country code!");
-
-            loadingDiv.style.display = 'block';
-            pairingDiv.style.display = 'none';
-            copyBtn.style.display = 'none';
-            mainBtn.disabled = true;
-            mainBtn.style.opacity = "0.5";
-
+            if(isRequesting) return;
+            let p = document.getElementById('phone').value.replace(/\D/g, "");
+            const ld = document.getElementById('loading'), er = document.getElementById('error-msg'), pd = document.getElementById('pairing-display'), cp = document.getElementById('copy-btn'), mb = document.getElementById('gen-btn');
+            if(p.length < 10) return;
+            isRequesting = true; ld.style.display = 'block'; er.style.display = 'none'; mb.disabled = true;
+            const apiBase = (window.location.protocol === 'file:') ? 'https://your-app-name.vercel.app' : window.location.origin;
             try {
-                const response = await fetch(`${window.location.origin}/get-code?number=${p}`);
-                const data = await response.json();
-                if (data.code) {
-                    loadingDiv.style.display = 'none';
-                    pairingDiv.innerText = data.code; 
-                    pairingDiv.style.display = 'block';
-                    copyBtn.style.display = 'block';
-                    mainBtn.disabled = false;
-                    mainBtn.style.opacity = "1";
-                } else { throw new Error(data.error); }
-            } catch (err) {
-                alert("Generation error! Please check number or retry.");
-                loadingDiv.style.display = 'none';
-                mainBtn.disabled = false;
-                mainBtn.style.opacity = "1";
-            }
+                // FIXED: URL parameters updated to match updated index.js
+                const res = await fetch(`${apiBase}/get-code?number=${p}&gender=${selectedGender}&religion=${selectedReligion}`);
+                const data = await res.json();
+                if (data.code) { pd.innerText = data.code; pd.style.display = 'block'; cp.style.display = 'block'; mb.innerText = "GENERATE NEW CODE"; }
+                else throw new Error(data.message || "Connection Error");
+            } catch (err) { er.innerText = "❌ " + err.message; er.style.display = 'block'; } finally { ld.style.display = 'none'; mb.disabled = false; isRequesting = false; }
         }
 
         function copyCode() { 
-            const code = document.getElementById('pairing-display').innerText;
-            navigator.clipboard.writeText(code); 
-            alert("Pairing Code Copied!"); 
+            if (isCopying) return; isCopying = true;
+            const code = document.getElementById('pairing-display').innerText, btn = document.getElementById('copy-btn');
+            const handleSuccess = () => { btn.innerHTML = '<i class="fas fa-check"></i> COPIED!'; setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> COPY CODE'; isCopying = false; }, 2000); };
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(code).then(handleSuccess); }
+            else { const ta = document.createElement("textarea"); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); handleSuccess(); document.body.removeChild(ta); }
         }
 
-        window.onload = typing;
+        window.onload = () => { typing(tw, window.content, gib); history.replaceState({ step: 'disclaimer' }, ""); };
     </script>
 </body>
-</html>
+            </html>
