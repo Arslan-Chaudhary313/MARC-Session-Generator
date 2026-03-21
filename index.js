@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 });
 
 async function startSession(phoneNumber, gender, religion, res) {
-    // UPDATED: Using /tmp directory for Vercel compatibility to avoid permission issues
+    // Vercel friendly temp directory
     const sessionDir = path.join('/tmp', `session_${Date.now()}`);
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
@@ -45,17 +45,23 @@ async function startSession(phoneNumber, gender, religion, res) {
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
         printQRInTerminal: false,
-        browser: ["MARC-MD", "Ubuntu", "3.0.0"]
+        browser: ["MARC-MD", "Chrome", "121.0.6167.140"] // Updated browser string
     });
 
     if (phoneNumber && !socket.authState.creds.registered) {
         const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
         try {
-            await delay(3000); 
+            // Wait slightly for socket to be ready
+            await delay(2000); 
             const code = await socket.requestPairingCode(cleanNumber);
-            if (res && !res.headersSent) res.status(200).json({ code });
+            if (res && !res.headersSent) {
+                res.status(200).json({ code });
+            }
         } catch (err) {
-            if (res && !res.headersSent) res.status(500).json({ error: "Pairing failed" });
+            console.error("Pairing Error:", err);
+            if (res && !res.headersSent) {
+                res.status(500).json({ error: "Pairing failed, try again." });
+            }
         }
     }
 
@@ -64,29 +70,20 @@ async function startSession(phoneNumber, gender, religion, res) {
         
         if (connection === "close") {
             const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
-            
-            // Auto-reconnect Logic: Reconnect if it's not a manual logout
-            if (reason !== DisconnectReason.loggedOut) {
-                console.log("Connection lost. Reconnecting...");
-                startSession(phoneNumber, gender, religion, res);
-            } else {
-                console.log("Connection closed. Session ended or logged out.");
+            // Removed auto-start on Vercel to prevent timeout loops
+            if (reason === DisconnectReason.loggedOut) {
                 fs.removeSync(sessionDir);
             }
         } else if (connection === "open") {
             const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
             const finalSession = `MARC-MD~${sessionBase64}`;
             
-            // Log for developer context (Internal use)
-            console.log(`Session generated for: ${gender} | ${religion}`);
-
             await socket.sendMessage(socket.user.id, { 
                 text: `*Successfully Connected!* 🚀\n\n*User Profile:* ${gender} | ${religion}\n\n*Session ID:* \n\`\`\`${finalSession}\`\`\`\n\n_Copy the ID above and use it in your Heroku/VPS config._` 
             });
             
-            await delay(5000);
+            await delay(2000);
             socket.end();
-            // Cleanup after successful generation
             if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
         }
     });
@@ -95,16 +92,18 @@ async function startSession(phoneNumber, gender, religion, res) {
 }
 
 app.get("/get-code", async (req, res) => {
-    // FIXED: Now accepting gender and religion from query params
     const { number, gender, religion } = req.query;
-    
     if (!number) return res.status(400).json({ error: "Number required" });
+    
     try {
         await startSession(number, gender || 'Not Specified', religion || 'Not Specified', res);
     } catch (e) {
-        if (!res.headersSent) res.status(500).json({ error: "Error" });
+        if (!res.headersSent) res.status(500).json({ error: "Server Error" });
     }
 });
+
+// For Vercel, we export the app
+export default app;
 
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Generator ready on port ${PORT}`);
