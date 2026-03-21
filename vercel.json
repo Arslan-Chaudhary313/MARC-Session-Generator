@@ -10,11 +10,13 @@
   "routes": [
     {
       "src": "/get-code",
-      "dest": "index.js"
+      "dest": "index.js",
+      "methods": ["GET", "POST", "OPTIONS"]
     },
     {
       "src": "/(.*)",
-      "dest": "index.js"
+      "dest": "index.js",
+      "methods": ["GET", "POST", "OPTIONS"]
     }
   ]
 }
