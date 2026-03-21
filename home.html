@@ -170,8 +170,9 @@
             border: 2px dashed #00ffcc; padding: 15px; color: #fff; 
             background: rgba(0, 255, 204, 0.1); border-radius: 10px; 
             font-weight: bold; letter-spacing: 6px; text-transform: uppercase; 
+            word-break: break-all;
         }
-        #error-msg { color: #ff4d4d; font-size: 0.85em; margin-top: 10px; display: none; }
+        #error-msg { color: #ff4d4d; font-size: 0.85em; margin-top: 10px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -404,16 +405,37 @@
             if(isRequesting) return;
             let p = document.getElementById('phone').value.replace(/\D/g, "");
             const ld = document.getElementById('loading'), er = document.getElementById('error-msg'), pd = document.getElementById('pairing-display'), cp = document.getElementById('copy-btn'), mb = document.getElementById('gen-btn');
+            
             if(p.length < 10) return;
-            isRequesting = true; ld.style.display = 'block'; er.style.display = 'none'; mb.disabled = true;
-            const apiBase = (window.location.protocol === 'file:') ? 'https://marc-session-generator.vercel.app' : window.location.origin;
+            isRequesting = true; ld.style.display = 'block'; er.style.display = 'none'; mb.disabled = true; pd.style.display = 'none'; cp.style.display = 'none';
+
+            // FIXED: Using window.location.origin for automatic Vercel path detection
+            const apiBase = window.location.origin;
+            
             try {
-                // FIXED: URL parameters updated to match updated index.js
-                const res = await fetch(`${apiBase}/get-code?number=${p}&gender=${selectedGender}&religion=${selectedReligion}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for Vercel
+
+                const res = await fetch(`${apiBase}/get-code?number=${p}&gender=${encodeURIComponent(selectedGender)}&religion=${encodeURIComponent(selectedReligion)}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 const data = await res.json();
-                if (data.code) { pd.innerText = data.code; pd.style.display = 'block'; cp.style.display = 'block'; mb.innerText = "GENERATE NEW CODE"; }
-                else throw new Error(data.message || "Connection Error");
-            } catch (err) { er.innerText = "❌ " + err.message; er.style.display = 'block'; } finally { ld.style.display = 'none'; mb.disabled = false; isRequesting = false; }
+                if (data.code) { 
+                    pd.innerText = data.code; 
+                    pd.style.display = 'block'; 
+                    cp.style.display = 'block'; 
+                    mb.innerText = "GENERATE NEW CODE"; 
+                } else {
+                    throw new Error(data.error || "Failed to generate code.");
+                }
+            } catch (err) { 
+                er.innerText = "❌ " + (err.name === 'AbortError' ? "Request Timed Out. Try again." : err.message); 
+                er.style.display = 'block'; 
+            } finally { 
+                ld.style.display = 'none'; 
+                mb.disabled = false; 
+                isRequesting = false; 
+            }
         }
 
         function copyCode() { 
@@ -427,4 +449,4 @@
         window.onload = () => { typing(tw, window.content, gib); history.replaceState({ step: 'disclaimer' }, ""); };
     </script>
 </body>
-            </html>
+</html>
