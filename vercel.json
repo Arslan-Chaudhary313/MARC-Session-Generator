@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "marc-md-session-generator",
   "builds": [
     {
       "src": "index.js",
@@ -9,14 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/get-code",
-      "dest": "index.js",
-      "methods": ["GET", "POST", "OPTIONS"]
-    },
-    {
       "src": "/(.*)",
-      "dest": "index.js",
-      "methods": ["GET", "POST", "OPTIONS"]
+      "dest": "index.js"
     }
   ]
 }
