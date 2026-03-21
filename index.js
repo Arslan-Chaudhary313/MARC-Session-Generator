@@ -20,91 +20,106 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 8000;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
+// Serving home.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'home.html'));
 });
 
 async function startSession(phoneNumber, gender, religion, res) {
-    // Vercel friendly temp directory
+    // Vercel only allows writing in /tmp directory
     const sessionDir = path.join('/tmp', `session_${Date.now()}`);
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version } = await fetchLatestBaileysVersion();
+    try {
+        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+        const { version } = await fetchLatestBaileysVersion();
 
-    const socket = makeWASocket({
-        version,
-        logger: pino({ level: "silent" }),
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
-        },
-        printQRInTerminal: false,
-        browser: ["MARC-MD", "Chrome", "121.0.6167.140"] // Updated browser string
-    });
+        const socket = makeWASocket({
+            version,
+            logger: pino({ level: "silent" }),
+            auth: {
+                creds: state.creds,
+                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
+            },
+            printQRInTerminal: false,
+            // Updated browser for pairing stability
+            browser: ["MARC-MD", "Chrome", "121.0.6167.140"]
+        });
 
-    if (phoneNumber && !socket.authState.creds.registered) {
-        const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
-        try {
-            // Wait slightly for socket to be ready
-            await delay(2000); 
-            const code = await socket.requestPairingCode(cleanNumber);
-            if (res && !res.headersSent) {
-                res.status(200).json({ code });
-            }
-        } catch (err) {
-            console.error("Pairing Error:", err);
-            if (res && !res.headersSent) {
-                res.status(500).json({ error: "Pairing failed, try again." });
+        // Requesting Pairing Code
+        if (phoneNumber && !socket.authState.creds.registered) {
+            const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
+            
+            // Give socket some time to initialize
+            await delay(3000); 
+            
+            try {
+                const code = await socket.requestPairingCode(cleanNumber);
+                if (!res.headersSent) {
+                    res.status(200).json({ code });
+                }
+            } catch (err) {
+                console.error("Pairing Error:", err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: "Pairing failed. Please refresh and try again." });
+                }
+                return;
             }
         }
+
+        socket.ev.on("creds.update", saveCreds);
+
+        socket.ev.on("connection.update", async (update) => {
+            const { connection, lastDisconnect } = update;
+            
+            if (connection === "open") {
+                // Formatting session to MARC-MD style
+                const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
+                const finalSession = `MARC-MD~${sessionBase64}`;
+                
+                await socket.sendMessage(socket.user.id, { 
+                    text: `*Successfully Connected to MARC-MD!* 🚀\n\n*Profile:* ${gender} | ${religion}\n\n*Your Session ID:* \n\n\`\`\`${finalSession}\`\`\`\n\n_Keep this safe and do not share it._` 
+                });
+                
+                await delay(3000);
+                socket.end();
+                // Clean up /tmp folder after success
+                if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
+            }
+
+            if (connection === "close") {
+                const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
+                if (reason !== DisconnectReason.loggedOut) {
+                    // Fail silently or handle reconnect locally if needed
+                }
+                if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
+            }
+        });
+
+    } catch (mainErr) {
+        console.error("Main Process Error:", mainErr);
+        if (!res.headersSent) res.status(500).json({ error: "Internal Server Error" });
     }
-
-    socket.ev.on("connection.update", async (update) => {
-        const { connection, lastDisconnect } = update;
-        
-        if (connection === "close") {
-            const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
-            // Removed auto-start on Vercel to prevent timeout loops
-            if (reason === DisconnectReason.loggedOut) {
-                fs.removeSync(sessionDir);
-            }
-        } else if (connection === "open") {
-            const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
-            const finalSession = `MARC-MD~${sessionBase64}`;
-            
-            await socket.sendMessage(socket.user.id, { 
-                text: `*Successfully Connected!* 🚀\n\n*User Profile:* ${gender} | ${religion}\n\n*Session ID:* \n\`\`\`${finalSession}\`\`\`\n\n_Copy the ID above and use it in your Heroku/VPS config._` 
-            });
-            
-            await delay(2000);
-            socket.end();
-            if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
-        }
-    });
-
-    socket.ev.on("creds.update", saveCreds);
 }
 
 app.get("/get-code", async (req, res) => {
     const { number, gender, religion } = req.query;
-    if (!number) return res.status(400).json({ error: "Number required" });
+    if (!number) return res.status(400).json({ error: "Number is required" });
     
-    try {
-        await startSession(number, gender || 'Not Specified', religion || 'Not Specified', res);
-    } catch (e) {
-        if (!res.headersSent) res.status(500).json({ error: "Server Error" });
-    }
+    // Safety for multiple responses
+    await startSession(number, gender, religion, res);
 });
 
-// For Vercel, we export the app
+// CRITICAL FOR VERCEL: Export the app instead of app.listen
 export default app;
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Generator ready on port ${PORT}`);
-});
+// Only listen locally for testing
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 8000;
+    app.listen(PORT, () => console.log(`🚀 Local Server on port ${PORT}`));
+}
