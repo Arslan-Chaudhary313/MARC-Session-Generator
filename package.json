@@ -9,14 +9,15 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.6.0",
+    "@hapi/boom": "^10.0.1",
     "axios": "^1.6.0",
     "express": "^4.18.2",
+    "fs-extra": "^11.2.0",
     "pino": "^8.16.1",
-    "qrcode-terminal": "^0.12.0",
-    "link-preview-js": "^3.0.4"
+    "cors": "^2.8.5"
   },
   "engines": {
-    "node": ">=16.x"
+    "node": ">=18.x"
   },
   "author": "Arslan Chaudhary",
   "license": "MIT"
