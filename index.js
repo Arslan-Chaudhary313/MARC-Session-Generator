@@ -1,8 +1,4 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
-// Loading Baileys using the most stable method for Vercel
-const pkg = require("@whiskeysockets/baileys");
+import pkg from "@whiskeysockets/baileys";
 const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
@@ -18,7 +14,7 @@ import fs from "fs-extra";
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-const { Boom } = require('@hapi/boom');
+import { Boom } from '@hapi/boom';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,9 +33,12 @@ app.get('/', (req, res) => {
 async function startSession(phoneNumber, gender, religion, res) {
     // Vercel only allows writing in /tmp directory
     const sessionDir = path.join('/tmp', `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
-
+    
     try {
+        if (!fs.existsSync(sessionDir)) {
+            fs.mkdirSync(sessionDir, { recursive: true });
+        }
+
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version } = await fetchLatestBaileysVersion();
 
@@ -57,7 +56,6 @@ async function startSession(phoneNumber, gender, religion, res) {
         // Requesting Pairing Code
         if (phoneNumber && !socket.authState.creds.registered) {
             const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
-            
             await delay(3000); 
             
             try {
@@ -66,9 +64,8 @@ async function startSession(phoneNumber, gender, religion, res) {
                     res.status(200).json({ code });
                 }
             } catch (err) {
-                console.error("Pairing Error:", err);
                 if (!res.headersSent) {
-                    res.status(500).json({ error: "Pairing failed. Please refresh and try again." });
+                    res.status(500).json({ error: "Pairing failed. Try again." });
                 }
                 return;
             }
@@ -106,7 +103,6 @@ async function startSession(phoneNumber, gender, religion, res) {
 app.get("/get-code", async (req, res) => {
     const { number, gender, religion } = req.query;
     if (!number) return res.status(400).json({ error: "Number is required" });
-    
     await startSession(number, gender, religion, res);
 });
 
