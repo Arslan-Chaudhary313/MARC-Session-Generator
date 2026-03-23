@@ -1,4 +1,8 @@
-import pkg from "@whiskeysockets/baileys";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+// Loading Baileys using the most stable method for Vercel
+const pkg = require("@whiskeysockets/baileys");
 const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
@@ -14,7 +18,7 @@ import fs from "fs-extra";
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import { Boom } from '@hapi/boom';
+const { Boom } = require('@hapi/boom');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,7 +93,6 @@ async function startSession(phoneNumber, gender, religion, res) {
             }
 
             if (connection === "close") {
-                const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
                 if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
             }
         });
@@ -113,5 +116,5 @@ export default app;
 // Local Development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 8000;
-    app.listen(PORT, () => console.log(`🚀 MARC-MD Server ready on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 Server ready on port ${PORT}`));
 }
