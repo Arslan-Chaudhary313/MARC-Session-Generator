@@ -1,4 +1,4 @@
-import baileys from "@whiskeysockets/baileys";
+import pkg from "@whiskeysockets/baileys";
 const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
@@ -6,7 +6,7 @@ const {
     makeCacheableSignalKeyStore,
     delay,
     DisconnectReason 
-} = baileys;
+} = pkg;
 
 import express from "express";
 import pino from "pino";
@@ -31,8 +31,8 @@ app.get('/', (req, res) => {
 });
 
 async function startSession(phoneNumber, gender, religion, res) {
-    // Vercel only allows writing in /tmp directory
-    const sessionDir = path.join('/tmp', `session_${Date.now()}`);
+    // Vercel friendly temp directory logic
+    const sessionDir = path.join('/tmp', `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     try {
@@ -47,15 +47,15 @@ async function startSession(phoneNumber, gender, religion, res) {
                 keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
             },
             printQRInTerminal: false,
-            // Updated browser for pairing stability
+            // Maintained your updated browser string for stability
             browser: ["MARC-MD", "Chrome", "121.0.6167.140"]
         });
 
-        // Requesting Pairing Code
+        // Requesting Pairing Code Logic
         if (phoneNumber && !socket.authState.creds.registered) {
             const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
             
-            // Give socket some time to initialize
+            // Wait for socket initialization
             await delay(3000); 
             
             try {
@@ -78,7 +78,7 @@ async function startSession(phoneNumber, gender, religion, res) {
             const { connection, lastDisconnect } = update;
             
             if (connection === "open") {
-                // Formatting session to MARC-MD style
+                // Maintained MARC-MD session formatting logic
                 const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
                 const finalSession = `MARC-MD~${sessionBase64}`;
                 
@@ -88,14 +88,14 @@ async function startSession(phoneNumber, gender, religion, res) {
                 
                 await delay(3000);
                 socket.end();
-                // Clean up /tmp folder after success
+                // Clean up /tmp folder
                 if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
             }
 
             if (connection === "close") {
                 const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
                 if (reason !== DisconnectReason.loggedOut) {
-                    // Fail silently or handle reconnect locally if needed
+                    // Logic preserved for silent closure
                 }
                 if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
             }
@@ -111,15 +111,14 @@ app.get("/get-code", async (req, res) => {
     const { number, gender, religion } = req.query;
     if (!number) return res.status(400).json({ error: "Number is required" });
     
-    // Safety for multiple responses
     await startSession(number, gender, religion, res);
 });
 
-// CRITICAL FOR VERCEL: Export the app instead of app.listen
+// VERCEL COMPLIANCE: Exporting the app
 export default app;
 
-// Only listen locally for testing
+// Local development support
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 8000;
-    app.listen(PORT, () => console.log(`🚀 Local Server on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 MARC-MD Server running on port ${PORT}`));
 }
