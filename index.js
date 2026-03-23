@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
 });
 
 async function startSession(phoneNumber, gender, religion, res) {
-    // Vercel friendly temp directory logic
+    // Vercel only allows writing in /tmp directory
     const sessionDir = path.join('/tmp', `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`);
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
@@ -47,15 +47,13 @@ async function startSession(phoneNumber, gender, religion, res) {
                 keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
             },
             printQRInTerminal: false,
-            // Maintained your updated browser string for stability
             browser: ["MARC-MD", "Chrome", "121.0.6167.140"]
         });
 
-        // Requesting Pairing Code Logic
+        // Requesting Pairing Code
         if (phoneNumber && !socket.authState.creds.registered) {
             const cleanNumber = phoneNumber.replace(/[^0-9]/g, ''); 
             
-            // Wait for socket initialization
             await delay(3000); 
             
             try {
@@ -78,7 +76,6 @@ async function startSession(phoneNumber, gender, religion, res) {
             const { connection, lastDisconnect } = update;
             
             if (connection === "open") {
-                // Maintained MARC-MD session formatting logic
                 const sessionBase64 = Buffer.from(JSON.stringify(state.creds)).toString("base64");
                 const finalSession = `MARC-MD~${sessionBase64}`;
                 
@@ -88,15 +85,11 @@ async function startSession(phoneNumber, gender, religion, res) {
                 
                 await delay(3000);
                 socket.end();
-                // Clean up /tmp folder
                 if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
             }
 
             if (connection === "close") {
                 const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
-                if (reason !== DisconnectReason.loggedOut) {
-                    // Logic preserved for silent closure
-                }
                 if (fs.existsSync(sessionDir)) fs.removeSync(sessionDir);
             }
         });
@@ -114,11 +107,11 @@ app.get("/get-code", async (req, res) => {
     await startSession(number, gender, religion, res);
 });
 
-// VERCEL COMPLIANCE: Exporting the app
+// For Vercel Deployment
 export default app;
 
-// Local development support
+// Local Development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 8000;
-    app.listen(PORT, () => console.log(`🚀 MARC-MD Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 MARC-MD Server ready on port ${PORT}`));
 }
